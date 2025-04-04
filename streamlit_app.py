@@ -1,55 +1,108 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
-st.title("Heart Beating Animation")
+# Embed p5.js code in an HTML string
+html_code = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- Load p5.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000; /* Dark background to highlight the particles */
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      let particles = [];
+      let NUM_PARTICLES = 600;
 
-# Use st.markdown with unsafe_allow_html to embed custom HTML and CSS
-st.markdown("""
-<style>
-/* Define the heart shape and its animation */
-.heart {
-  width: 100px;
-  height: 90px;
-  background: red;
-  position: relative;
-  transform: rotate(-45deg);
-  animation: beat 1s infinite;
-  margin: 0 auto;
-}
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+        // Generate particles around a heart shape using a parametric equation
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          let t = random(TWO_PI);
+          // 'scale' controls the size of the heart
+          let scale = random(5, 10); 
+          let x = scale * 16 * pow(sin(t), 3);
+          let y = -scale * (
+            13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t)
+          );
+          // Center them on screen
+          x += width / 2;
+          y += height / 2;
 
-/* Create the two circles of the heart using pseudo-elements */
-.heart::before,
-.heart::after {
-  content: "";
-  background: red;
-  border-radius: 50%;
-  width: 100px;
-  height: 100px;
-  position: absolute;
-}
+          particles.push(new Particle(x, y));
+        }
+      }
 
-/* Position the circles */
-.heart::before {
-  top: -50px;
-  left: 0;
-}
-.heart::after {
-  left: 50px;
-  top: 0;
-}
+      function draw() {
+        background(0, 25); 
+        // Slightly transparent background for trailing effect
+        for (let p of particles) {
+          p.update();
+          p.show();
+        }
+      }
 
-/* Define the keyframes for the beat animation */
-@keyframes beat {
-  0%, 100% {
-    transform: scale(1) rotate(-45deg);
-  }
-  50% {
-    transform: scale(1.2) rotate(-45deg);
-  }
-}
-</style>
+      class Particle {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          // Give each particle a small random velocity
+          this.vx = random(-0.5, 0.5);
+          this.vy = random(-0.5, 0.5);
+          // Particle color: random shades of red/pink
+          this.r = random(200, 255);
+          this.g = 0;
+          this.b = random(100, 200);
+          this.alpha = 255; 
+          this.size = random(2, 5);
+        }
 
-<!-- Insert the heart element -->
-<div class="heart"></div>
-""", unsafe_allow_html=True)
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          // Fade out gradually
+          this.alpha -= 1.0; 
+          // If particle becomes invisible, reset it to a new position in the heart
+          if (this.alpha < 0) {
+            this.alpha = 255;
+            let t = random(TWO_PI);
+            let scale = random(5, 10);
+            this.x = scale * 16 * pow(sin(t), 3) + width / 2;
+            this.y = -scale * (
+              13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t)
+            ) + height / 2;
+            // Random velocity again
+            this.vx = random(-0.5, 0.5);
+            this.vy = random(-0.5, 0.5);
+          }
+        }
 
-st.write("Enjoy the beating heart animation!")
+        show() {
+          noStroke();
+          fill(this.r, this.g, this.b, this.alpha);
+          ellipse(this.x, this.y, this.size);
+        }
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+      }
+    </script>
+  </body>
+</html>
+"""
+
+st.set_page_config(page_title="Heart Particle Animation", layout="wide")
+st.title("Sparkling Heart Animation with p5.js")
+
+# Display the p5.js code as a component in Streamlit
+components.html(html_code, height=600)
