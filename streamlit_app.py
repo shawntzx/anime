@@ -6,43 +6,34 @@ html_code = """
 <html>
   <head>
     <meta charset="utf-8" />
-    <!-- Load p5.js from CDN -->
+    <!-- 加载 p5.js -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
     <style>
       body {
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background: #000; /* Dark background */
+        background: #000; /* 深色背景对比 */
       }
     </style>
   </head>
   <body>
     <script>
       /*******************************************************
-       * HEART → CARTOON PIG HEAD
-       * A more detailed pig face with ears, eyes, nose, cheeks,
-       * highlight, and separate color regions.
+       * HEART → CARTOON PIG
+       * 增大 & 加强鼻子区块
        *******************************************************/
 
-      // Number of total particles
-      const NUM_PARTICLES = 1000;
-
-      // Delay (in frames) before morphing starts (e.g., 180 ~3s at 60fps)
-      let globalDelay = 180;
-
-      // Morph progress goes from 0 (heart) to 1 (pig)
-      let morphProgress = 0;
-
+      const NUM_PARTICLES = 1000;  // 总粒子数
+      let globalDelay = 180;      // 心形静止时长(帧数)
+      let morphProgress = 0;      // 从 0(心) 到 1(猪头)
       let particles = [];
 
       function setup() {
         createCanvas(windowWidth, windowHeight);
 
-        // Generate particles
         for (let i = 0; i < NUM_PARTICLES; i++) {
-          // 1) HEART SHAPE (initial position)
-          //    Using the classic heart parametric equation
+          // 1) 爱心形状 (初始)
           let t = random(TWO_PI);
           let scaleFactor = random(5, 10);
           let heartX = scaleFactor * 16 * pow(sin(t), 3) + width / 2;
@@ -50,171 +41,145 @@ html_code = """
             13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t)
           ) + height / 2;
 
-          // 2) CARTOON PIG SHAPE (target position & color)
-          //    We'll define multiple overlapping "regions":
-          //    ears, face, nose, nose holes, cheeks, eyes, highlight, etc.
-          //    Each region is assigned a fraction of the particles.
-
-          let shapeRand = random(); // 0..1
+          // 2) 猪头形状 (目标)
+          let shapeRand = random();
           let targetX, targetY;
           let cR, cG, cB;
 
-          // Helper: random point inside an ellipse
+          // 随机椭圆点函数
           function randomPointInEllipse(cx, cy, rx, ry) {
-            // sqrt() + random angle ensures uniform distribution in ellipse
             let angle = random(TWO_PI);
             let r = sqrt(random(1));
-            let x = r * cos(angle) * rx;
-            let y = r * sin(angle) * ry;
-            return [cx + x, cy + y];
+            return [
+              cx + r * cos(angle) * rx,
+              cy + r * sin(angle) * ry
+            ];
           }
 
-          // Canvas center
           let cx = width / 2;
           let cy = height / 2;
-
-          // We’ll distribute shapeRand across regions in ascending order.
-          // Adjust intervals to change how many particles go to each region.
 
           if (shapeRand < 0.05) {
             /********** LEFT EAR (5%) **********/
             let [x, y] = randomPointInEllipse(cx - 60, cy - 70, 25, 30);
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Slightly darker pink
-            cR = 255; cG = 160; cB = 200;
+            cR = 255; cG = 160; cB = 200; // 耳朵粉
 
           } else if (shapeRand < 0.10) {
             /********** RIGHT EAR (5%) **********/
             let [x, y] = randomPointInEllipse(cx + 60, cy - 70, 25, 30);
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Same as left ear
-            cR = 255; cG = 160; cB = 200;
+            cR = 255; cG = 160; cB = 200; // 耳朵粉
 
-          } else if (shapeRand < 0.60) {
-            /********** FACE (50%) **********/
-            // A main ellipse for the face
+          } else if (shapeRand < 0.55) {
+            /********** FACE (45%) **********/
             let [x, y] = randomPointInEllipse(cx, cy, 80, 70);
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Light pink
-            cR = 255; cG = 185; cB = 200;
+            cR = 255; cG = 185; cB = 200; // 脸部浅粉
 
           } else if (shapeRand < 0.65) {
-            /********** NOSE (5%) **********/
-            // Snout area
-            let [x, y] = randomPointInEllipse(cx, cy + 20, 30, 20);
-            targetX = x; 
+            /********** NOSE (10%) (更大 + 更多粒子) **********/
+            // 鼻子椭圆加大
+            let [x, y] = randomPointInEllipse(cx, cy + 20, 40, 25);
+            targetX = x;
             targetY = y;
-            // Medium pink
-            cR = 255; cG = 140; cB = 190;
+            // 鼻子颜色更饱和、偏深一点
+            cR = 255; cG = 120; cB = 180;
 
           } else if (shapeRand < 0.70) {
             /********** NOSE HOLES (5%) **********/
-            // Two black nostrils. We'll just scatter them in the snout ellipse.
+            // 鼻孔保持原大小，但可能也可略增
             let [x, y] = randomPointInEllipse(cx, cy + 20, 15, 10);
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Black
+            // 鼻孔黑色
             cR = 0; cG = 0; cB = 0;
 
           } else if (shapeRand < 0.80) {
             /********** CHEEKS (10%) **********/
-            // Left or right cheek
             if (random() < 0.5) {
-              // Left cheek
               var [x, y] = randomPointInEllipse(cx - 35, cy + 15, 12, 12);
             } else {
-              // Right cheek
               var [x, y] = randomPointInEllipse(cx + 35, cy + 15, 12, 12);
             }
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Rosy pink
-            cR = 255; cG = 150; cB = 180;
+            cR = 255; cG = 150; cB = 180; // 腮红
 
           } else if (shapeRand < 0.90) {
             /********** EYES (10%) **********/
-            // Left or right eye
             if (random() < 0.5) {
-              // Left eye
+              // 左眼
               var [x, y] = randomPointInEllipse(cx - 30, cy - 15, 5, 5);
             } else {
-              // Right eye
+              // 右眼
               var [x, y] = randomPointInEllipse(cx + 30, cy - 15, 5, 5);
             }
-            targetX = x; 
+            targetX = x;
             targetY = y;
-            // Black eyes
-            cR = 0; cG = 0; cB = 0;
+            cR = 0; cG = 0; cB = 0; // 眼睛黑色
 
           } else {
             /********** FACE HIGHLIGHT (10%) **********/
-            // A lighter ellipse in top-right corner
             let [x, y] = randomPointInEllipse(cx + 25, cy - 35, 20, 15);
             targetX = x;
             targetY = y;
-            // Very light pink for the highlight
+            // 高光
             cR = 255; cG = 210; cB = 220;
           }
 
-          // Create our particle
           particles.push(new Particle(heartX, heartY, targetX, targetY, cR, cG, cB));
         }
       }
 
       function draw() {
-        background(0, 25);  // Slightly transparent for trailing
+        // 半透明背景，营造拖尾
+        background(0, 25);
 
-        // Keep heart static until the global delay finishes
+        // 前期保持心形静止
         if (globalDelay > 0) {
           globalDelay--;
         } else {
-          // Once delay is over, morphProgress gradually goes to 1
+          // 开始形变
           if (morphProgress < 1) {
-            morphProgress += 0.005;  // Increase/decrease for faster/slower
+            morphProgress += 0.005;  // 调整形变速度
             morphProgress = min(morphProgress, 1);
           }
         }
 
-        // Update & display each particle
+        // 更新 & 绘制
         for (let p of particles) {
           p.update(morphProgress);
           p.show();
         }
       }
 
-      // Particle class
       class Particle {
         constructor(heartX, heartY, targetX, targetY, r, g, b) {
-          // Starting: heart
           this.heartX = heartX;
           this.heartY = heartY;
-          // Target: pig feature
           this.targetX = targetX;
           this.targetY = targetY;
 
-          // Current position starts at the heart
           this.currentX = heartX;
           this.currentY = heartY;
 
-          // Particle color
           this.r = r;
           this.g = g;
           this.b = b;
           this.alpha = 255;
-
-          // Slight random size
           this.size = random(3, 6);
         }
 
         update(morphProgress) {
-          // Linear interpolation from heart coords to pig coords
+          // 从心形坐标插值到目标猪头坐标
           this.currentX = lerp(this.heartX, this.targetX, morphProgress);
           this.currentY = lerp(this.heartY, this.targetY, morphProgress);
 
-          // Once fully morphed, let them drift slightly
+          // 形变完毕后给一点微小漂移
           if (morphProgress >= 1) {
             this.currentX += random(-0.3, 0.3);
             this.currentY += random(-0.3, 0.3);
@@ -236,8 +201,7 @@ html_code = """
 </html>
 """
 
-st.set_page_config(page_title="Heart → Cute Pig Morph", layout="wide")
-st.title("从爱心到更精致的卡通猪头 (Heart → More Detailed Pig)")
+st.set_page_config(page_title="Heart → More Prominent Nose Pig", layout="wide")
+st.title("从爱心到卡通猪头：加强鼻子 (Heart → Pig with Bigger Nose)")
 
-# Embed the p5.js sketch in the Streamlit app
 components.html(html_code, height=650)
