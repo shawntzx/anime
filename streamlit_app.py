@@ -21,26 +21,34 @@ html_code = """
     <script>
       let particles = [];
       let NUM_PARTICLES = 600;
+      // Global delay (in frames) before particles start moving (e.g., 180 frames ~ 3 seconds at 60 fps)
+      let globalDelay = 180;
 
       function setup() {
         createCanvas(windowWidth, windowHeight);
-        // Generate particles around a heart shape using a parametric equation
+        // Generate particles positioned using the heart parametric equation
         for (let i = 0; i < NUM_PARTICLES; i++) {
           let t = random(TWO_PI);
           let scaleFactor = random(5, 10);
-          let x = scaleFactor * 16 * pow(sin(t), 3);
-          let y = -scaleFactor * (13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t));
-          x += width / 2;
-          y += height / 2;
+          let x = scaleFactor * 16 * pow(sin(t), 3) + width / 2;
+          let y = -scaleFactor * (13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t)) + height / 2;
           particles.push(new Particle(x, y));
         }
       }
 
       function draw() {
-        background(0, 25); 
-        // Slightly transparent background creates a trailing effect
+        background(0, 25); // Slightly transparent background for trailing effect
+        // If the global delay is not over, decrement it.
+        if (globalDelay > 0) {
+          globalDelay--;
+        } else {
+          // After the delay, update particles (movement and fade)
+          for (let p of particles) {
+            p.update();
+          }
+        }
+        // Always show the particles
         for (let p of particles) {
-          p.update();
           p.show();
         }
       }
@@ -54,26 +62,19 @@ html_code = """
           this.r = random(200, 255);
           this.g = 0;
           this.b = random(100, 200);
-          this.alpha = 255; 
+          this.alpha = 255;
           this.size = random(2, 5);
-          // Delay before fading begins (in frames)
-          this.delay = int(random(60, 120));
         }
 
         update() {
+          // Move the particle
           this.x += this.vx;
           this.y += this.vy;
-          // Only start fading after the delay has elapsed
-          if (this.delay > 0) {
-            this.delay--;
-          } else {
-            this.alpha -= 1.0;
-          }
-          // When a particle has faded out completely, reset its properties
+          // Gradually fade the particle
+          this.alpha -= 1.0;
+          // When the particle is fully faded, reset its properties
           if (this.alpha < 0) {
             this.alpha = 255;
-            this.delay = int(random(60, 120)); // Reset delay for the new particle
-
             let t = random(TWO_PI);
             let scaleFactor = random(5, 10);
             this.x = scaleFactor * 16 * pow(sin(t), 3) + width / 2;
@@ -98,7 +99,8 @@ html_code = """
 </html>
 """
 
-st.set_page_config(page_title="Heart Particle Animation", layout="wide")
-st.title("Sparkling Heart Animation with p5.js (Initial Heart Lingers)")
+st.set_page_config(page_title="Static-to-Animated Heart", layout="wide")
+st.title("Heart Animation (Static Initially)")
 
+# Embed the p5.js code in the Streamlit app
 components.html(html_code, height=600)
